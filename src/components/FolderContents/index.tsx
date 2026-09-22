@@ -1,9 +1,10 @@
 import styled from 'styled-components';
-import { EmptyState, FileIcon, FolderIcon } from '@/components/atoms';
+import { EmptyState, FileIcon, FolderIcon, VisuallyHidden } from '@/components/atoms';
 import { useStoreDispatch, useStoreSelector } from '@/store';
 import { selectFolderContents } from '@/store/selectors';
-import { navigationRequested } from '@/store/workspaceSlice';
+import { dialogOpened, navigationRequested } from '@/store/workspaceSlice';
 import { getTypeLabel } from '@/utils/helpers';
+import { ItemActions } from './ItemActions';
 
 const Surface = styled.div`
 	min-height: 12rem;
@@ -56,6 +57,11 @@ const TypeCell = styled(Cell)`
 	white-space: nowrap;
 `;
 
+const ActionCell = styled(Cell)`
+	width: 1%;
+	white-space: nowrap;
+`;
+
 const NameButton = styled.button`
 	display: flex;
 	align-items: center;
@@ -70,18 +76,21 @@ const NameButton = styled.button`
 	cursor: pointer;
 `;
 
-const Name = styled.span`
-	display: flex;
-	align-items: center;
-	gap: ${({ theme }) => theme.spacing.md};
-	padding: ${({ theme }) => `${theme.spacing.sm} 0`};
-	font-size: ${({ theme }) => theme.fontSizes.sm};
-	overflow-wrap: anywhere;
-`;
-
 export function FolderContents() {
 	const dispatch = useStoreDispatch();
 	const contents = useStoreSelector(selectFolderContents);
+
+	function open(item: WorkspaceItem) {
+		dispatch(
+			item.type === 'folder'
+				? navigationRequested({ kind: 'folder', folderId: item.id })
+				: dialogOpened({ kind: 'preview', fileId: item.id })
+		);
+	}
+
+	function openLabel(item: WorkspaceItem) {
+		return item.type === 'folder' ? `Open folder ${item.name}` : `Preview file ${item.name}`;
+	}
 
 	return (
 		<Surface>
@@ -93,31 +102,28 @@ export function FolderContents() {
 						<tr>
 							<HeaderCell scope='col'>Name</HeaderCell>
 							<HeaderCell scope='col'>Type</HeaderCell>
+							<HeaderCell scope='col'>
+								<VisuallyHidden>Actions</VisuallyHidden>
+							</HeaderCell>
 						</tr>
 					</thead>
 					<tbody>
 						{contents.map((item) => (
 							<Row key={item.id}>
 								<Cell>
-									{item.type === 'folder' ? (
-										<NameButton
-											type='button'
-											aria-label={`Open folder ${item.name}`}
-											onClick={() =>
-												dispatch(navigationRequested({ kind: 'folder', folderId: item.id }))
-											}
-										>
+									<NameButton type='button' aria-label={openLabel(item)} onClick={() => open(item)}>
+										{item.type === 'folder' ? (
 											<FolderIcon aria-hidden='true' />
-											{item.name}
-										</NameButton>
-									) : (
-										<Name>
+										) : (
 											<FileIcon aria-hidden='true' />
-											{item.name}
-										</Name>
-									)}
+										)}
+										{item.name}
+									</NameButton>
 								</Cell>
 								<TypeCell>{getTypeLabel(item)}</TypeCell>
+								<ActionCell>
+									<ItemActions item={item} />
+								</ActionCell>
 							</Row>
 						))}
 					</tbody>

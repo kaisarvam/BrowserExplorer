@@ -1,8 +1,12 @@
 import styled from 'styled-components';
 import { Button, NewFileIcon, NewFolderIcon } from '@/components/atoms';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { FileEditor } from '@/components/FileEditor';
 import { FolderContents } from '@/components/FolderContents';
-import { useStoreDispatch } from '@/store';
+import { SearchField } from '@/components/SearchField';
+import { SearchResults } from '@/components/SearchResults';
+import { useStoreDispatch, useStoreSelector } from '@/store';
+import { selectIsSearching, selectOpenFileId } from '@/store/selectors';
 import { dialogOpened } from '@/store/workspaceSlice';
 
 const Panel = styled.main`
@@ -28,30 +32,40 @@ const CreateActions = styled.div`
 
 export function WorkspaceMainPanel() {
 	const dispatch = useStoreDispatch();
+	const isSearching = useStoreSelector(selectIsSearching);
+	const openFileId = useStoreSelector(selectOpenFileId);
 
 	return (
 		<Panel>
-			<Toolbar>
-				<Breadcrumbs />
-				<CreateActions>
-					<Button
-						type='button'
-						onClick={() => dispatch(dialogOpened({ kind: 'create', itemType: 'folder' }))}
-					>
-						<NewFolderIcon aria-hidden='true' />
-						New folder
-					</Button>
-					<Button
-						type='button'
-						onClick={() => dispatch(dialogOpened({ kind: 'create', itemType: 'file' }))}
-					>
-						<NewFileIcon aria-hidden='true' />
-						New file
-					</Button>
-				</CreateActions>
-			</Toolbar>
+			<SearchField />
 
-			<FolderContents />
+			{isSearching ? (
+				<SearchResults />
+			) : (
+				<>
+					<Toolbar>
+						<Breadcrumbs />
+						<CreateActions>
+							<Button
+								type='button'
+								onClick={() => dispatch(dialogOpened({ kind: 'create', itemType: 'folder' }))}
+							>
+								<NewFolderIcon aria-hidden='true' />
+								New folder
+							</Button>
+							<Button
+								type='button'
+								onClick={() => dispatch(dialogOpened({ kind: 'create', itemType: 'file' }))}
+							>
+								<NewFileIcon aria-hidden='true' />
+								New file
+							</Button>
+						</CreateActions>
+					</Toolbar>
+
+					{openFileId === null ? <FolderContents /> : <FileEditor />}
+				</>
+			)}
 		</Panel>
 	);
 }

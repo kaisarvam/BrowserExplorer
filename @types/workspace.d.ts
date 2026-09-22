@@ -26,16 +26,28 @@ type Workspace = {
 	items: WorkspaceItems;
 };
 
-type NavigationTarget = { kind: 'folder'; folderId: WorkspaceItemId };
+type NavigationTarget =
+	| { kind: 'folder'; folderId: WorkspaceItemId }
+	| { kind: 'file'; fileId: WorkspaceItemId }
+	| { kind: 'closeFile' };
 
-type DialogState = { kind: 'none' } | { kind: 'create'; itemType: WorkspaceItemType };
+type DialogState =
+	| { kind: 'none' }
+	| { kind: 'create'; itemType: WorkspaceItemType }
+	| { kind: 'preview'; fileId: WorkspaceItemId }
+	| { kind: 'rename'; itemId: WorkspaceItemId }
+	| { kind: 'delete'; itemId: WorkspaceItemId }
+	| { kind: 'unsavedChanges'; target: NavigationTarget };
 
 type WorkspaceState = {
 	rootId: WorkspaceItemId;
 	items: WorkspaceItems;
 	selectedFolderId: WorkspaceItemId;
+	openFileId: WorkspaceItemId | null;
 
+	editorDraft: string;
 	expandedFolderIds: WorkspaceItemId[];
+	searchQuery: string;
 	dialog: DialogState;
 };
 
