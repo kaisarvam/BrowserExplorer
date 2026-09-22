@@ -53,3 +53,44 @@ type WorkspaceState = {
 
 type NameValidationResult =
 	{ status: 'valid'; name: string } | { status: 'invalid'; message: string };
+
+type WorkspaceViewMode = 'list' | 'grid';
+
+type WorkspaceIconSize = 'small' | 'large';
+
+type ColorSchemePreference = 'system' | 'light' | 'dark';
+
+type PreferencesState = {
+	viewMode: WorkspaceViewMode;
+	iconSize: WorkspaceIconSize;
+	colorScheme: ColorSchemePreference;
+};
+
+type IconTone =
+	| FileIconTone
+	| 'folder'
+	| 'folderOpen'
+	| 'preview'
+	| 'edit'
+	| 'rename'
+	| 'delete'
+	| 'newFolder'
+	| 'newFile'
+	| 'save'
+	| 'discard'
+	| 'search'
+	| 'neutral';
+
+type FileIconTone =
+	'fileText' | 'fileMarkdown' | 'fileData' | 'fileSheet' | 'fileLog' | 'fileGeneric' | 'fileEmpty';
+
+type ItemAction = {
+	key: string;
+
+	label: string;
+
+	text: string;
+	tone: IconTone;
+	Icon: import('react-icons').IconType;
+	run: () => void;
+};

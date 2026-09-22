@@ -1,5 +1,13 @@
 export const STORAGE_KEY = 'mini-workspace-explorer:workspace:v1';
 
+export const PREFERENCES_STORAGE_KEY = 'mini-workspace-explorer:preferences:v1';
+
+export const DEFAULT_PREFERENCES: PreferencesState = {
+	viewMode: 'list',
+	iconSize: 'small',
+	colorScheme: 'system',
+};
+
 const ROOT_ID = 'workspace-root';
 
 const sampleItems: WorkspaceItem[] = [

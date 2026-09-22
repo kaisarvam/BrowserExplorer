@@ -1,3 +1,4 @@
+import type { MouseEvent } from 'react';
 import styled from 'styled-components';
 import { ChevronIcon, FolderIcon } from '@/components/atoms';
 import { useStoreDispatch, useStoreSelector } from '@/store';
@@ -56,9 +57,12 @@ const NameButton = styled.button<{ $selected: boolean }>`
 type FolderTreeNodeProps = {
 	folder: FolderItem;
 	depth: number;
+
+	onSelect: () => void;
+	onContextMenu: (event: MouseEvent<HTMLElement>, folder: FolderItem) => void;
 };
 
-export function FolderTreeNode({ folder, depth }: FolderTreeNodeProps) {
+export function FolderTreeNode({ folder, depth, onSelect, onContextMenu }: FolderTreeNodeProps) {
 	const dispatch = useStoreDispatch();
 	const items = useStoreSelector(selectItems);
 	const expandedFolderIds = useStoreSelector(selectExpandedFolderIds);
@@ -76,6 +80,7 @@ export function FolderTreeNode({ folder, depth }: FolderTreeNodeProps) {
 				role='treeitem'
 				aria-selected={isSelected}
 				aria-expanded={childFolders.length > 0 ? isExpanded : undefined}
+				onContextMenu={(event) => onContextMenu(event, folder)}
 			>
 				{childFolders.length > 0 ? (
 					<ToggleButton
@@ -94,7 +99,10 @@ export function FolderTreeNode({ folder, depth }: FolderTreeNodeProps) {
 					type='button'
 					$selected={isSelected}
 					aria-current={isSelected ? 'true' : undefined}
-					onClick={() => dispatch(navigationRequested({ kind: 'folder', folderId: folder.id }))}
+					onClick={() => {
+						dispatch(navigationRequested({ kind: 'folder', folderId: folder.id }));
+						onSelect();
+					}}
 				>
 					<FolderIcon aria-hidden='true' />
 					{folder.name}
@@ -104,7 +112,13 @@ export function FolderTreeNode({ folder, depth }: FolderTreeNodeProps) {
 			{isExpanded && childFolders.length > 0 && (
 				<ul role='group'>
 					{childFolders.map((childFolder) => (
-						<FolderTreeNode key={childFolder.id} folder={childFolder} depth={depth + 1} />
+						<FolderTreeNode
+							key={childFolder.id}
+							folder={childFolder}
+							depth={depth + 1}
+							onSelect={onSelect}
+							onContextMenu={onContextMenu}
+						/>
 					))}
 				</ul>
 			)}

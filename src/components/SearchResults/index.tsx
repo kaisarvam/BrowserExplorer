@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { EmptyState, FileIcon, FolderIcon, TypeBadge } from '@/components/atoms';
+import { EmptyState, ItemIcon, TypeBadge } from '@/components/atoms';
 import { useStoreDispatch, useStoreSelector } from '@/store';
 import { selectItems, selectSearchQuery, selectSearchResults } from '@/store/selectors';
 import { navigationRequested, pathExpanded } from '@/store/workspaceSlice';
@@ -80,11 +80,7 @@ export function SearchResults() {
 							}}
 						>
 							<Name>
-								{item.type === 'folder' ? (
-									<FolderIcon aria-hidden='true' />
-								) : (
-									<FileIcon aria-hidden='true' />
-								)}
+								<ItemIcon item={item} size='1.25rem' />
 								{item.name}
 							</Name>
 							<Location>{location}</Location>

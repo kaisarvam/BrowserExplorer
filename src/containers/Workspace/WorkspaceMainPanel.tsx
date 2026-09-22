@@ -5,6 +5,7 @@ import { FileEditor } from '@/components/FileEditor';
 import { FolderContents } from '@/components/FolderContents';
 import { SearchField } from '@/components/SearchField';
 import { SearchResults } from '@/components/SearchResults';
+import { ViewControls } from '@/components/ViewControls';
 import { useStoreDispatch, useStoreSelector } from '@/store';
 import { selectIsSearching, selectOpenFileId } from '@/store/selectors';
 import { dialogOpened } from '@/store/workspaceSlice';
@@ -63,7 +64,14 @@ export function WorkspaceMainPanel() {
 						</CreateActions>
 					</Toolbar>
 
-					{openFileId === null ? <FolderContents /> : <FileEditor />}
+					{openFileId === null ? (
+						<>
+							<ViewControls />
+							<FolderContents />
+						</>
+					) : (
+						<FileEditor />
+					)}
 				</>
 			)}
 		</Panel>

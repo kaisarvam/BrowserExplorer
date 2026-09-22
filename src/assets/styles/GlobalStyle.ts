@@ -12,6 +12,7 @@ export const GlobalStyle = createGlobalStyle`
   }
 
   :root {
+    color-scheme: ${({ theme }) => theme.scheme};
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     font-size: ${({ theme }) => theme.fontSizes.md};
     line-height: 1.5;

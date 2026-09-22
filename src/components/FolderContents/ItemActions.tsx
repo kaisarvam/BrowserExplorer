@@ -1,62 +1,60 @@
 import styled from 'styled-components';
-import { Button, DeleteIcon, EditIcon, PreviewIcon, RenameIcon } from '@/components/atoms';
-import { useStoreDispatch } from '@/store';
-import { dialogOpened, navigationRequested } from '@/store/workspaceSlice';
+import { Button, IconTint } from '@/components/atoms';
+import { useItemActions } from '@/hooks';
 
-const Actions = styled.div`
+const Actions = styled.div<{ $compact: boolean }>`
 	display: flex;
 	align-items: center;
 	gap: ${({ theme }) => theme.spacing.xs};
 
 	flex-wrap: nowrap;
-	justify-content: flex-end;
+	justify-content: ${({ $compact }) => ($compact ? 'center' : 'flex-end')};
 `;
 
-export function ItemActions({ item }: { item: WorkspaceItem }) {
-	const dispatch = useStoreDispatch();
+const IconButton = styled.button`
+	display: grid;
+	place-items: center;
+	width: 1.75rem;
+	height: 1.75rem;
+	padding: 0;
+	border: 1px solid transparent;
+	border-radius: ${({ theme }) => theme.radii.sm};
+	background: none;
+	cursor: pointer;
+
+	&:hover {
+		border-color: ${({ theme }) => theme.colors.border};
+		background: ${({ theme }) => theme.colors.surface};
+	}
+`;
+
+type ItemActionsProps = {
+	item: WorkspaceItem;
+
+	compact: boolean;
+};
+
+export function ItemActions({ item, compact }: ItemActionsProps) {
+	const actions = useItemActions(item).filter((action) => action.key !== 'open');
 
 	return (
-		<Actions>
-			{item.type === 'file' && (
-				<>
-					<Button
-						type='button'
-						$variant='ghost'
-						aria-label={`Preview ${item.name}`}
-						onClick={() => dispatch(dialogOpened({ kind: 'preview', fileId: item.id }))}
-					>
-						<PreviewIcon aria-hidden='true' />
-						Preview
+		<Actions $compact={compact}>
+			{actions.map(({ key, label, text, tone, Icon, run }) =>
+				compact ? (
+					<IconButton key={key} type='button' title={text} aria-label={label} onClick={run}>
+						<IconTint $tone={tone}>
+							<Icon aria-hidden='true' />
+						</IconTint>
+					</IconButton>
+				) : (
+					<Button key={key} type='button' $variant='ghost' aria-label={label} onClick={run}>
+						<IconTint $tone={tone}>
+							<Icon aria-hidden='true' />
+						</IconTint>
+						{text}
 					</Button>
-					<Button
-						type='button'
-						$variant='ghost'
-						aria-label={`Edit ${item.name}`}
-						onClick={() => dispatch(navigationRequested({ kind: 'file', fileId: item.id }))}
-					>
-						<EditIcon aria-hidden='true' />
-						Edit
-					</Button>
-				</>
+				)
 			)}
-			<Button
-				type='button'
-				$variant='ghost'
-				aria-label={`Rename ${item.name}`}
-				onClick={() => dispatch(dialogOpened({ kind: 'rename', itemId: item.id }))}
-			>
-				<RenameIcon aria-hidden='true' />
-				Rename
-			</Button>
-			<Button
-				type='button'
-				$variant='ghost'
-				aria-label={`Delete ${item.name}`}
-				onClick={() => dispatch(dialogOpened({ kind: 'delete', itemId: item.id }))}
-			>
-				<DeleteIcon aria-hidden='true' />
-				Delete
-			</Button>
 		</Actions>
 	);
 }

@@ -47,3 +47,9 @@ export const selectIsSearching = createSelector(
 	[selectSearchQuery],
 	(searchQuery) => searchQuery.trim() !== ''
 );
+
+export const selectViewMode = (state: RootState) => state.preferences.viewMode;
+
+export const selectIconSize = (state: RootState) => state.preferences.iconSize;
+
+export const selectColorScheme = (state: RootState) => state.preferences.colorScheme;

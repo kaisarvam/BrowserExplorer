@@ -1,4 +1,4 @@
-import { STORAGE_KEY } from '@/utils/constants';
+import { PREFERENCES_STORAGE_KEY, STORAGE_KEY } from '@/utils/constants';
 
 export function loadWorkspace(): Workspace | null {
 	let storedValue: string | null;
@@ -120,4 +120,44 @@ function everyItemReachesRoot(items: WorkspaceItems, rootId: string): boolean {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+export function loadPreferences(): PreferencesState | null {
+	try {
+		const storedValue = window.localStorage.getItem(PREFERENCES_STORAGE_KEY);
+
+		return storedValue === null ? null : parsePreferences(JSON.parse(storedValue));
+	} catch {
+		return null;
+	}
+}
+
+export function savePreferences(preferences: PreferencesState): void {
+	try {
+		window.localStorage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify(preferences));
+	} catch {
+		return;
+	}
+}
+
+function parsePreferences(value: unknown): PreferencesState | null {
+	if (!isRecord(value)) {
+		return null;
+	}
+
+	const { viewMode, iconSize } = value;
+
+	if (viewMode !== 'list' && viewMode !== 'grid') {
+		return null;
+	}
+
+	if (iconSize !== 'small' && iconSize !== 'large') {
+		return null;
+	}
+
+	return { viewMode, iconSize, colorScheme: parseColorScheme(value.colorScheme) };
+}
+
+function parseColorScheme(value: unknown): ColorSchemePreference {
+	return value === 'light' || value === 'dark' || value === 'system' ? value : 'system';
 }
