@@ -9,9 +9,10 @@ network call.
 
 ## Live deployment
 
-<!-- Replace with the deployed URL before submitting. -->
+The app is deployed on Netlify: **[chimerical-lolly-38596f.netlify.app](https://chimerical-lolly-38596f.netlify.app/)**
 
-_Not deployed yet._
+Like the local version, the live app keeps the workspace in the browser's `localStorage`, so each
+browser starts from the sample workspace and keeps its own changes.
 
 ## Features
 
