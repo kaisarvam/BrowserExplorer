@@ -38,6 +38,42 @@ const MenuButton = styled.button`
 
 const MARGIN = 8;
 
+function findTargetIndex(key: string, labels: string[], current: number): number | null {
+	const count = labels.length;
+
+	if (key === 'ArrowDown') {
+		return (current + 1) % count;
+	}
+
+	if (key === 'ArrowUp') {
+		return (current - 1 + count) % count;
+	}
+
+	if (key === 'Home') {
+		return 0;
+	}
+
+	if (key === 'End') {
+		return count - 1;
+	}
+
+	if (key.length !== 1 || key.trim() === '') {
+		return null;
+	}
+
+	const letter = key.toLocaleLowerCase();
+
+	for (let step = 1; step <= count; step += 1) {
+		const index = (current + step) % count;
+
+		if (labels[index]?.trim().toLocaleLowerCase().startsWith(letter)) {
+			return index;
+		}
+	}
+
+	return null;
+}
+
 type ContextMenuProps = {
 	x: number;
 	y: number;
@@ -91,18 +127,26 @@ export function ContextMenu({ x, y, label, actions, onClose }: ContextMenuProps)
 		};
 	}, [onClose]);
 
-	function moveFocus(event: KeyboardEvent<HTMLUListElement>) {
-		if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
+	function handleMenuKeyDown(event: KeyboardEvent<HTMLUListElement>) {
+		if (event.key === 'Tab') {
+			event.preventDefault();
+			onClose();
+			return;
+		}
+
+		const buttons = Array.from(menuRef.current?.querySelectorAll('button') ?? []);
+		const current = buttons.indexOf(document.activeElement as HTMLButtonElement);
+		const next = findTargetIndex(
+			event.key,
+			buttons.map((button) => button.textContent ?? ''),
+			current
+		);
+
+		if (next === null) {
 			return;
 		}
 
 		event.preventDefault();
-
-		const buttons = Array.from(menuRef.current?.querySelectorAll('button') ?? []);
-		const current = buttons.indexOf(document.activeElement as HTMLButtonElement);
-		const step = event.key === 'ArrowDown' ? 1 : -1;
-		const next = (current + step + buttons.length) % buttons.length;
-
 		buttons[next]?.focus();
 	}
 
@@ -113,7 +157,7 @@ export function ContextMenu({ x, y, label, actions, onClose }: ContextMenuProps)
 			aria-label={label}
 			$x={position.x}
 			$y={position.y}
-			onKeyDown={moveFocus}
+			onKeyDown={handleMenuKeyDown}
 		>
 			{actions.map(({ key, text, tone, Icon, run }) => (
 				<li key={key} role='none'>

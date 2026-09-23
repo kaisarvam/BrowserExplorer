@@ -1,15 +1,19 @@
-import { useState } from 'react';
+import { useCallback, useId, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { Button, MenuIcon } from '@/components/atoms';
+import { Notice } from '@/components/Notice';
 import { ThemeControls } from '@/components/ThemeControls';
 import { WorkspaceDialogs } from '@/components/WorkspaceDialogs';
+import { useUnsavedChangesGuard } from '@/hooks';
+import { APP_TITLE } from '@/utils/constants';
 import { WorkspaceMainPanel } from './WorkspaceMainPanel';
 import { WorkspaceSidebar } from './WorkspaceSidebar';
 
 const Shell = styled.div`
 	display: flex;
 	flex-direction: column;
-	min-height: 100vh;
+	height: 100vh;
+	height: 100dvh;
 `;
 
 const Header = styled.header`
@@ -35,6 +39,7 @@ const MenuButton = styled(Button)`
 const Body = styled.div`
 	display: grid;
 	grid-template-columns: minmax(14rem, 18rem) 1fr;
+	grid-template-rows: minmax(0, 1fr);
 	flex: 1;
 	min-height: 0;
 
@@ -45,24 +50,40 @@ const Body = styled.div`
 
 export function Workspace() {
 	const [sidebarOpen, setSidebarOpen] = useState(false);
+	const sidebarId = useId();
+	const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+	useUnsavedChangesGuard();
+
+	const closeSidebar = useCallback(() => {
+		setSidebarOpen(false);
+		menuButtonRef.current?.focus();
+	}, []);
 
 	return (
 		<Shell>
 			<Header>
-				<MenuButton type='button' aria-expanded={sidebarOpen} onClick={() => setSidebarOpen(true)}>
+				<MenuButton
+					ref={menuButtonRef}
+					type='button'
+					aria-expanded={sidebarOpen}
+					aria-controls={sidebarId}
+					onClick={() => setSidebarOpen(true)}
+				>
 					<MenuIcon aria-hidden='true' />
 					Folders
 				</MenuButton>
-				<Title>Mini Workspace Explorer</Title>
+				<Title>{APP_TITLE}</Title>
 				<ThemeControls />
 			</Header>
 
 			<Body>
-				<WorkspaceSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+				<WorkspaceSidebar id={sidebarId} open={sidebarOpen} onClose={closeSidebar} />
 				<WorkspaceMainPanel />
 			</Body>
 
 			<WorkspaceDialogs />
+			<Notice />
 		</Shell>
 	);
 }

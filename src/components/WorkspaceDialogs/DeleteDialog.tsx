@@ -28,8 +28,8 @@ export function DeleteDialog({ item, items, onCancel, onConfirm }: DeleteDialogP
 		>
 			<p>
 				{nestedCount > 0
-					? `This folder and the ${nestedCount} item${nestedCount === 1 ? '' : 's'} inside it will be deleted. This cannot be undone.`
-					: 'This cannot be undone.'}
+					? `This folder and the ${nestedCount} item${nestedCount === 1 ? '' : 's'} inside it will be deleted. You can undo this straight afterwards.`
+					: 'You can undo this straight afterwards.'}
 			</p>
 		</Modal>
 	);

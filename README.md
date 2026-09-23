@@ -15,23 +15,33 @@ _Not deployed yet._
 
 ## Features
 
-- Sidebar folder tree with arbitrary nesting, expand and collapse, and the selected folder
-  highlighted
+- Sidebar folder tree with arbitrary nesting, expand and collapse, guide lines between levels,
+  the selected folder highlighted, and full arrow-key navigation
 - Main panel listing the selected folder's contents, with folders and files clearly distinguished
-- Clickable breadcrumbs for the current folder's path
+- Clickable breadcrumbs for the current folder's path, shortened in the middle when the path is
+  deep
 - Create folders and text files inside the selected folder
 - Rename and delete items, with confirmation before a destructive action
-- Recursive delete, which removes everything nested inside a folder
+- Recursive delete, which removes everything nested inside a folder, with Undo straight afterwards
+- A short confirmation message after creating, renaming, saving, or deleting, shown for 3 seconds
+  by default and set by `NOTICE_DURATION_MS` in `src/utils/constants`
+- A newly created item is scrolled into view, focused, and briefly highlighted
 - Light and dark themes, following the operating system by default and remembered when overridden
 - Right-click context menu on items, on the folder background, and in the sidebar tree
 - List and grid layouts, with small or large icons, remembered between visits
 - Banded rows in the details table, so a wide listing stays readable across its width
 - Colour-coded folder and document icons, tinted by file type the way a file manager is
 - Read-only preview dialog for a file, with editing kept as a separate, deliberate action
-- Text editor with explicit save, an unsaved-changes indicator, and a prompt before navigating away
-- Workspace-wide search over folder and file names, with case-insensitive partial matching
+- Text editor with explicit save, `Ctrl+S` or `⌘S` to save, an unsaved-changes indicator in the
+  editor and the page title, a prompt before navigating away, and a browser warning before
+  closing the tab with unsaved changes
+- Workspace-wide search over folder and file names, with case-insensitive partial matching and
+  the matched text highlighted
 - Persistence to `localStorage`, restored on the next visit
-- Responsive layout, with the sidebar becoming a drawer on small screens
+- Responsive layout, with the sidebar becoming a drawer on small screens, and larger touch targets
+  on touch devices
+- The header and sidebar stay in place while the listing scrolls
+- Animations are switched off when the operating system asks for reduced motion
 
 ## Technology stack
 
@@ -116,9 +126,10 @@ the root, which switches the browser's own controls and scrollbars to match.
 
 Right-clicking an item, the listing background, or a folder in the sidebar opens the application's
 own menu instead of the browser's. The menu is written in the codebase rather than taken from a
-package: it is positioned at the pointer and clamped to the viewport, closes on Escape, on an
-outside click, and on scroll or resize, moves focus to its first entry, and supports arrow-key
-navigation between entries.
+package: it is positioned at the pointer and clamped to the viewport, closes on Escape, on Tab,
+on an outside click, and on scroll or resize, moves focus to its first entry, and supports the
+arrow keys, Home and End, and typing a letter to jump to an entry. Focus returns to where it was
+when the menu closes.
 
 The browser's own menu is suppressed only on those workspace surfaces. It still works in the text
 editor, the search field, and the rename dialog, where copy and paste matter.
@@ -184,6 +195,8 @@ visible.
 Saving is explicit. The editor keeps a draft separate from the saved content, and shows
 `Unsaved changes` or `All changes saved` in words rather than by colour alone. Any navigation that
 would discard a draft opens a prompt offering Save and continue, Discard changes, or Cancel.
+While a draft is unsaved, the page title starts with `•`, and the browser asks for confirmation
+before the tab is closed or reloaded.
 
 ## Implementation decisions
 
@@ -214,4 +227,4 @@ would discard a draft opens a prompt offering Save and continue, Discard changes
   need an index at a much larger scale.
 - The workspace is per-browser. There is no sync across devices or browsers.
 - Files hold plain text only. There is no binary-file or upload support.
-- Undo is not available; a delete is confirmed but permanent.
+- Undo covers only the most recent delete, and only while its message is showing.

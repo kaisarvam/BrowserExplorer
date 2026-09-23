@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import styled from 'styled-components';
 import { useStoreDispatch, useStoreSelector } from '@/store';
 import { selectBreadcrumbs } from '@/store/selectors';
@@ -30,30 +31,58 @@ const Crumb = styled.button`
 	}
 `;
 
+const COLLAPSE_AFTER = 4;
+const VISIBLE_TAIL = 2;
+
 export function Breadcrumbs() {
 	const dispatch = useStoreDispatch();
 	const breadcrumbs = useStoreSelector(selectBreadcrumbs);
+	const [expandedFor, setExpandedFor] = useState<WorkspaceItemId | null>(null);
+
+	const currentId = breadcrumbs.at(-1)?.id ?? null;
+	const isCollapsed = breadcrumbs.length > COLLAPSE_AFTER && expandedFor !== currentId;
+	const head = isCollapsed ? breadcrumbs.slice(0, 1) : breadcrumbs;
+	const hidden = isCollapsed ? breadcrumbs.slice(1, -VISIBLE_TAIL) : [];
+	const tail = isCollapsed ? breadcrumbs.slice(-VISIBLE_TAIL) : [];
+
+	function renderCrumb(item: WorkspaceItem, showSeparator: boolean) {
+		const isCurrent = item.id === currentId;
+
+		return (
+			<li key={item.id}>
+				{showSeparator && <Separator aria-hidden='true'>/</Separator>}
+				<Crumb
+					type='button'
+					aria-current={isCurrent ? 'page' : undefined}
+					disabled={isCurrent}
+					onClick={() => dispatch(navigationRequested({ kind: 'folder', folderId: item.id }))}
+				>
+					{item.name}
+				</Crumb>
+			</li>
+		);
+	}
 
 	return (
 		<nav aria-label='Breadcrumb'>
 			<List>
-				{breadcrumbs.map((item, index) => {
-					const isCurrent = index === breadcrumbs.length - 1;
+				{head.map((item, index) => renderCrumb(item, index > 0))}
 
-					return (
-						<li key={item.id}>
-							{index > 0 && <Separator aria-hidden='true'>/</Separator>}
-							<Crumb
-								type='button'
-								aria-current={isCurrent ? 'page' : undefined}
-								disabled={isCurrent}
-								onClick={() => dispatch(navigationRequested({ kind: 'folder', folderId: item.id }))}
-							>
-								{item.name}
-							</Crumb>
-						</li>
-					);
-				})}
+				{isCollapsed && (
+					<li>
+						<Separator aria-hidden='true'>/</Separator>
+						<Crumb
+							type='button'
+							title={hidden.map((item) => item.name).join(' / ')}
+							aria-label={`Show ${hidden.length} hidden folders`}
+							onClick={() => setExpandedFor(currentId)}
+						>
+							&hellip;
+						</Crumb>
+					</li>
+				)}
+
+				{tail.map((item) => renderCrumb(item, true))}
 			</List>
 		</nav>
 	);

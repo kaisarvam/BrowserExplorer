@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { EmptyState, ItemIcon, TypeBadge } from '@/components/atoms';
+import { EmptyState, ItemIcon, TypeBadge, VisuallyHidden } from '@/components/atoms';
 import { useStoreDispatch, useStoreSelector } from '@/store';
 import { selectItems, selectSearchQuery, selectSearchResults } from '@/store/selectors';
 import { navigationRequested, pathExpanded } from '@/store/workspaceSlice';
@@ -44,50 +44,83 @@ const Location = styled.span`
 	font-size: ${({ theme }) => theme.fontSizes.xs};
 `;
 
+const Match = styled.mark`
+	padding: 0;
+	border-radius: 2px;
+	background: ${({ theme }) => theme.colors.warningSurface};
+	color: inherit;
+	font-weight: 600;
+`;
+
+function HighlightedName({ name, query }: { name: string; query: string }) {
+	const start = query === '' ? -1 : name.toLocaleLowerCase().indexOf(query);
+
+	if (start === -1) {
+		return <>{name}</>;
+	}
+
+	const end = start + query.length;
+
+	return (
+		<span>
+			{name.slice(0, start)}
+			<Match>{name.slice(start, end)}</Match>
+			{name.slice(end)}
+		</span>
+	);
+}
+
 export function SearchResults() {
 	const dispatch = useStoreDispatch();
 	const items = useStoreSelector(selectItems);
 	const results = useStoreSelector(selectSearchResults);
 	const searchQuery = useStoreSelector(selectSearchQuery);
-
-	if (results.length === 0) {
-		return <EmptyState>No folders or files match &ldquo;{searchQuery.trim()}&rdquo;.</EmptyState>;
-	}
+	const normalisedQuery = searchQuery.trim().toLocaleLowerCase();
 
 	return (
-		<List>
-			{results.map((item) => {
-				const location = getPath(items, item.id)
-					.slice(0, -1)
-					.map((ancestor) => ancestor.name)
-					.join(' / ');
+		<>
+			<VisuallyHidden role='status'>
+				{results.length === 1 ? '1 result' : `${results.length} results`}
+			</VisuallyHidden>
 
-				return (
-					<Row key={item.id}>
-						<TypeBadge item={item} />
+			{results.length === 0 ? (
+				<EmptyState>No folders or files match &ldquo;{searchQuery.trim()}&rdquo;.</EmptyState>
+			) : (
+				<List>
+					{results.map((item) => {
+						const location = getPath(items, item.id)
+							.slice(0, -1)
+							.map((ancestor) => ancestor.name)
+							.join(' / ');
 
-						<OpenButton
-							type='button'
-							onClick={() => {
-								dispatch(pathExpanded(item.id));
-								dispatch(
-									navigationRequested(
-										item.type === 'folder'
-											? { kind: 'folder', folderId: item.id }
-											: { kind: 'file', fileId: item.id }
-									)
-								);
-							}}
-						>
-							<Name>
-								<ItemIcon item={item} size='1.25rem' />
-								{item.name}
-							</Name>
-							<Location>{location}</Location>
-						</OpenButton>
-					</Row>
-				);
-			})}
-		</List>
+						return (
+							<Row key={item.id}>
+								<OpenButton
+									type='button'
+									onClick={() => {
+										dispatch(pathExpanded(item.id));
+										dispatch(
+											navigationRequested(
+												item.type === 'folder'
+													? { kind: 'folder', folderId: item.id }
+													: { kind: 'file', fileId: item.id }
+											)
+										);
+									}}
+								>
+									<Name>
+										<ItemIcon item={item} size='1.25rem' />
+										<HighlightedName name={item.name} query={normalisedQuery} />
+									</Name>
+									<Location>{location}</Location>
+								</OpenButton>
+
+								<TypeBadge item={item} />
+							</Row>
+						);
+					})}
+				</List>
+			)}
+		</>
 	);
 }

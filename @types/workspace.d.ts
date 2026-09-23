@@ -49,6 +49,14 @@ type WorkspaceState = {
 	expandedFolderIds: WorkspaceItemId[];
 	searchQuery: string;
 	dialog: DialogState;
+	lastCreatedItemId: WorkspaceItemId | null;
+	notice: WorkspaceNotice | null;
+};
+
+type WorkspaceNotice = {
+	id: number;
+	message: string;
+	restorable: WorkspaceItem[];
 };
 
 type NameValidationResult =

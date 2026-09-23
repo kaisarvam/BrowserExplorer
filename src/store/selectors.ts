@@ -18,6 +18,10 @@ export const selectSearchQuery = (state: RootState) => state.workspace.searchQue
 
 export const selectDialog = (state: RootState) => state.workspace.dialog;
 
+export const selectLastCreatedItemId = (state: RootState) => state.workspace.lastCreatedItemId;
+
+export const selectNotice = (state: RootState) => state.workspace.notice;
+
 export const selectFolderContents = createSelector(
 	[selectItems, selectSelectedFolderId],
 	(items, selectedFolderId) => getChildren(items, selectedFolderId)

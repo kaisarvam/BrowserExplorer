@@ -80,6 +80,7 @@ export function WorkspaceDialogs() {
 				items={items}
 				parentId={item.parentId}
 				ignoreItemId={item.id}
+				keepExtension={item.type === 'file'}
 				onCancel={() => dispatch(dialogClosed())}
 				onConfirm={(name) => dispatch(itemRenamed({ itemId: item.id, name }))}
 			/>

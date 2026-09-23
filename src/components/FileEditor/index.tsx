@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import styled from 'styled-components';
 import { Button, CloseIcon, DiscardIcon, SaveIcon } from '@/components/atoms';
 import { useStoreDispatch, useStoreSelector } from '@/store';
@@ -63,6 +64,24 @@ export function FileEditor() {
 	const draft = useStoreSelector(selectEditorDraft);
 	const hasUnsavedChanges = useStoreSelector(selectHasUnsavedChanges);
 
+	useEffect(() => {
+		function handleKeyDown(event: KeyboardEvent) {
+			if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 's') {
+				return;
+			}
+
+			event.preventDefault();
+
+			if (hasUnsavedChanges) {
+				dispatch(draftSaved());
+			}
+		}
+
+		document.addEventListener('keydown', handleKeyDown);
+
+		return () => document.removeEventListener('keydown', handleKeyDown);
+	}, [dispatch, hasUnsavedChanges]);
+
 	if (openFile?.type !== 'file') {
 		return null;
 	}
@@ -86,6 +105,8 @@ export function FileEditor() {
 				<Button
 					type='button'
 					$variant='primary'
+					title='Save (Ctrl+S or ⌘S)'
+					aria-keyshortcuts='Control+S Meta+S'
 					disabled={!hasUnsavedChanges}
 					onClick={() => dispatch(draftSaved())}
 				>

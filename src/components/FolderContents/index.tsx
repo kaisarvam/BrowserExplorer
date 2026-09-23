@@ -1,11 +1,24 @@
+import { useEffect, useRef } from 'react';
 import styled, { useTheme } from 'styled-components';
-import { EmptyState, ItemIcon, TypeBadge, VisuallyHidden } from '@/components/atoms';
+import {
+	Button,
+	EmptyState,
+	IconTint,
+	ItemIcon,
+	TypeBadge,
+	VisuallyHidden,
+} from '@/components/atoms';
 import { CreateContextMenu } from '@/components/ContextMenu/CreateContextMenu';
 import { ItemContextMenu } from '@/components/ContextMenu/ItemContextMenu';
-import { useContextMenu } from '@/hooks';
+import { useContextMenu, useCreateActions } from '@/hooks';
 import { useStoreDispatch, useStoreSelector } from '@/store';
-import { selectFolderContents, selectIconSize, selectViewMode } from '@/store/selectors';
-import { dialogOpened, navigationRequested } from '@/store/workspaceSlice';
+import {
+	selectFolderContents,
+	selectIconSize,
+	selectLastCreatedItemId,
+	selectViewMode,
+} from '@/store/selectors';
+import { createdItemAcknowledged, dialogOpened, navigationRequested } from '@/store/workspaceSlice';
 import { getTypeLabel } from '@/utils/helpers';
 import { ItemActions } from './ItemActions';
 
@@ -48,7 +61,8 @@ const Row = styled.tr`
 		border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 	}
 
-	&:hover > td {
+	&:hover > td,
+	&:focus-within > td {
 		background: ${({ theme }) => theme.colors.accentSurface};
 	}
 `;
@@ -121,6 +135,18 @@ const TableWrapper = styled.div`
 			justify-content: flex-start;
 		}
 	}
+
+	@media (hover: hover) and (min-width: ${({ theme }) => theme.compactBreakpoint}) {
+		${ActionCell} > div {
+			opacity: 0;
+			transition: opacity 120ms ease;
+		}
+
+		${Row}:hover ${ActionCell} > div,
+		${Row}:focus-within ${ActionCell} > div {
+			opacity: 1;
+		}
+	}
 `;
 
 const Grid = styled.ul<{ $tileWidth: string }>`
@@ -141,7 +167,8 @@ const GridTile = styled.li`
 	background: ${({ theme }) => theme.colors.surfaceRaised};
 	text-align: center;
 
-	&:hover {
+	&:hover,
+	&:focus-within {
 		border-color: ${({ theme }) => theme.colors.borderStrong};
 	}
 `;
@@ -161,8 +188,16 @@ const TileButton = styled.button`
 	border: none;
 	background: none;
 	font-size: ${({ theme }) => theme.fontSizes.sm};
-	overflow-wrap: anywhere;
 	cursor: pointer;
+`;
+
+const TileName = styled.span`
+	display: -webkit-box;
+	overflow: hidden;
+	overflow-wrap: anywhere;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
 `;
 
 const TileGlyph = styled.span<{ $slot: string }>`
@@ -171,13 +206,67 @@ const TileGlyph = styled.span<{ $slot: string }>`
 	min-height: ${({ $slot }) => $slot};
 `;
 
+const EmptyPanel = styled.div`
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: ${({ theme }) => theme.spacing.sm};
+	padding-bottom: ${({ theme }) => theme.spacing.lg};
+`;
+
+const EmptyActions = styled.div`
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: ${({ theme }) => theme.spacing.sm};
+`;
+
+function revealCreatedItem(element: HTMLElement, highlight: string): void {
+	element.querySelector('button')?.focus({ preventScroll: true });
+	element.scrollIntoView({ block: 'nearest' });
+
+	if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+		return;
+	}
+
+	const targets = element instanceof HTMLTableRowElement ? Array.from(element.cells) : [element];
+
+	for (const target of targets) {
+		const resting = window.getComputedStyle(target).backgroundColor;
+
+		target.animate([{ backgroundColor: highlight }, { backgroundColor: resting }], {
+			duration: 1200,
+			easing: 'ease-out',
+		});
+	}
+}
+
 export function FolderContents() {
 	const dispatch = useStoreDispatch();
 	const theme = useTheme();
 	const contents = useStoreSelector(selectFolderContents);
 	const viewMode = useStoreSelector(selectViewMode);
 	const iconSize = useStoreSelector(selectIconSize);
+	const lastCreatedItemId = useStoreSelector(selectLastCreatedItemId);
+	const createActions = useCreateActions();
 	const { menu, openAt, close } = useContextMenu<WorkspaceItem | null>();
+	const surfaceRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (lastCreatedItemId === null) {
+			return;
+		}
+
+		const element = surfaceRef.current?.querySelector<HTMLElement>(
+			`[data-item-id="${CSS.escape(lastCreatedItemId)}"]`
+		);
+
+		if (element) {
+			revealCreatedItem(element, theme.colors.accentSurface);
+		}
+
+		dispatch(createdItemAcknowledged());
+	}, [dispatch, lastCreatedItemId, theme]);
 
 	const isGrid = viewMode === 'grid';
 	const isLarge = iconSize === 'large';
@@ -203,18 +292,39 @@ export function FolderContents() {
 	}
 
 	return (
-		<Surface onContextMenu={(event) => openAt(event, null)}>
+		<Surface ref={surfaceRef} onContextMenu={(event) => openAt(event, null)}>
 			{contents.length === 0 ? (
-				<EmptyState>This folder is empty. Use New folder or New file to add something.</EmptyState>
+				<EmptyPanel>
+					<EmptyState>This folder is empty.</EmptyState>
+					<EmptyActions>
+						{createActions.map(({ key, text, tone, Icon, run }) => (
+							<Button key={key} type='button' onClick={run}>
+								<IconTint $tone={tone}>
+									<Icon aria-hidden='true' />
+								</IconTint>
+								{text}
+							</Button>
+						))}
+					</EmptyActions>
+				</EmptyPanel>
 			) : isGrid ? (
 				<Grid $tileWidth={isLarge ? '12rem' : '10.5rem'} aria-label='Folder contents'>
 					{contents.map((item) => (
-						<GridTile key={item.id} onContextMenu={(event) => openAt(event, item)}>
-							<TileButton type='button' aria-label={openLabel(item)} onClick={() => open(item)}>
+						<GridTile
+							key={item.id}
+							data-item-id={item.id}
+							onContextMenu={(event) => openAt(event, item)}
+						>
+							<TileButton
+								type='button'
+								title={item.name}
+								aria-label={openLabel(item)}
+								onClick={() => open(item)}
+							>
 								<TileGlyph $slot={glyphSize}>
 									<ItemIcon item={item} size={glyphSize} />
 								</TileGlyph>
-								{item.name}
+								<TileName>{item.name}</TileName>
 							</TileButton>
 							<TypeBadge item={item} />
 							<TileFooter>
@@ -237,7 +347,11 @@ export function FolderContents() {
 						</thead>
 						<tbody>
 							{contents.map((item) => (
-								<Row key={item.id} onContextMenu={(event) => openAt(event, item)}>
+								<Row
+									key={item.id}
+									data-item-id={item.id}
+									onContextMenu={(event) => openAt(event, item)}
+								>
 									<Cell>
 										<NameButton
 											type='button'

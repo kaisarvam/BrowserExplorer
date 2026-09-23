@@ -26,6 +26,11 @@ const IconButton = styled.button`
 		border-color: ${({ theme }) => theme.colors.border};
 		background: ${({ theme }) => theme.colors.surface};
 	}
+
+	@media (pointer: coarse) {
+		width: 2.75rem;
+		height: 2.75rem;
+	}
 `;
 
 type ItemActionsProps = {

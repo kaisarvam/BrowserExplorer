@@ -1,3 +1,7 @@
+export const APP_TITLE = 'Mini Workspace Explorer';
+
+export const NOTICE_DURATION_MS = 3000;
+
 export const STORAGE_KEY = 'mini-workspace-explorer:workspace:v1';
 
 export const PREFERENCES_STORAGE_KEY = 'mini-workspace-explorer:preferences:v1';

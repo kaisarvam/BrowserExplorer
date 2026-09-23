@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { Button, CloseIcon } from '@/components/atoms';
 import { FolderTree } from '@/components/FolderTree';
@@ -16,8 +17,11 @@ const Panel = styled.aside<{ $open: boolean }>`
 		inset: 0 auto 0 0;
 		width: min(18rem, 85vw);
 		z-index: 20;
+		visibility: ${({ $open }) => ($open ? 'visible' : 'hidden')};
 		transform: translateX(${({ $open }) => ($open ? '0' : '-100%')});
-		transition: transform 160ms ease;
+		transition:
+			transform 160ms ease,
+			visibility 0s linear ${({ $open }) => ($open ? '0s' : '160ms')};
 	}
 `;
 
@@ -43,18 +47,38 @@ const CloseRow = styled.div`
 `;
 
 type WorkspaceSidebarProps = {
+	id: string;
 	open: boolean;
 	onClose: () => void;
 };
 
-export function WorkspaceSidebar({ open, onClose }: WorkspaceSidebarProps) {
+export function WorkspaceSidebar({ id, open, onClose }: WorkspaceSidebarProps) {
+	const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+	useEffect(() => {
+		if (open) {
+			closeButtonRef.current?.focus();
+		}
+	}, [open]);
+
 	return (
 		<>
 			{open && <Backdrop onClick={onClose} />}
 
-			<Panel $open={open} aria-label='Workspace folders'>
+			<Panel
+				id={id}
+				$open={open}
+				aria-label='Workspace folders'
+				onKeyDown={(event) => {
+					const target = event.target as HTMLElement;
+
+					if (open && event.key === 'Escape' && !target.closest('[role="menu"]')) {
+						onClose();
+					}
+				}}
+			>
 				<CloseRow>
-					<Button type='button' $variant='ghost' onClick={onClose}>
+					<Button ref={closeButtonRef} type='button' $variant='ghost' onClick={onClose}>
 						<CloseIcon aria-hidden='true' />
 						Close menu
 					</Button>

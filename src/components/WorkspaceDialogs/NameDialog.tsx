@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Button, FieldError, Modal, TextInput } from '@/components/atoms';
 import { validateItemName } from '@/utils/helpers';
 
@@ -10,6 +10,7 @@ type NameDialogProps = {
 	items: WorkspaceItems;
 	parentId: WorkspaceItemId;
 	ignoreItemId?: WorkspaceItemId;
+	keepExtension?: boolean;
 	onCancel: () => void;
 	onConfirm: (name: string) => void;
 };
@@ -22,6 +23,7 @@ export function NameDialog({
 	items,
 	parentId,
 	ignoreItemId,
+	keepExtension = false,
 	onCancel,
 	onConfirm,
 }: NameDialogProps) {
@@ -29,6 +31,20 @@ export function NameDialog({
 	const errorId = useId();
 	const [name, setName] = useState(initialName);
 	const [error, setError] = useState<string | null>(null);
+	const inputRef = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		const input = inputRef.current;
+
+		if (!input || initialName === '') {
+			return;
+		}
+
+		const extensionStart = initialName.lastIndexOf('.');
+		const selectionEnd = keepExtension && extensionStart > 0 ? extensionStart : initialName.length;
+
+		input.setSelectionRange(0, selectionEnd);
+	}, [initialName, keepExtension]);
 
 	function handleSubmit(event: React.FormEvent) {
 		event.preventDefault();
@@ -61,6 +77,7 @@ export function NameDialog({
 			<form id={formId} onSubmit={handleSubmit} noValidate>
 				<label htmlFor={`${formId}-name`}>{label}</label>
 				<TextInput
+					ref={inputRef}
 					id={`${formId}-name`}
 					value={name}
 					$invalid={error !== null}

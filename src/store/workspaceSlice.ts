@@ -1,4 +1,4 @@
-import { createSlice, nanoid } from '@reduxjs/toolkit';
+import { createSlice, current, nanoid } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createSampleWorkspace } from '@/utils/constants';
 import {
@@ -22,7 +22,17 @@ function createInitialState(): WorkspaceState {
 		expandedFolderIds: [workspace.rootId],
 		searchQuery: '',
 		dialog: { kind: 'none' },
+		lastCreatedItemId: null,
+		notice: null,
 	};
+}
+
+function showNotice(
+	state: WorkspaceState,
+	message: string,
+	restorable: WorkspaceItem[] = []
+): void {
+	state.notice = { id: (state.notice?.id ?? 0) + 1, message, restorable };
 }
 
 function hasUnsavedChanges(state: WorkspaceState): boolean {
@@ -54,10 +64,13 @@ function saveDraft(state: WorkspaceState): void {
 
 	if (openFile?.type === 'file') {
 		openFile.content = state.editorDraft;
+		showNotice(state, `${openFile.name} saved.`);
 	}
 }
 
 function applyNavigation(state: WorkspaceState, target: NavigationTarget): void {
+	state.lastCreatedItemId = null;
+
 	if (target.kind === 'closeFile') {
 		state.openFileId = null;
 		state.editorDraft = '';
@@ -179,6 +192,14 @@ const workspaceSlice = createSlice({
 			state.dialog = { kind: 'none' };
 		},
 
+		noticeDismissed(state) {
+			state.notice = null;
+		},
+
+		createdItemAcknowledged(state) {
+			state.lastCreatedItemId = null;
+		},
+
 		itemCreated: {
 			reducer(
 				state,
@@ -199,6 +220,8 @@ const workspaceSlice = createSlice({
 
 				expandFolderIds(state, [parentId]);
 				state.dialog = { kind: 'none' };
+				state.lastCreatedItemId = id;
+				showNotice(state, `${validation.name} created.`);
 			},
 			prepare(payload: { name: string; itemType: WorkspaceItemType }) {
 				return { payload: { ...payload, id: nanoid() } };
@@ -224,8 +247,13 @@ const workspaceSlice = createSlice({
 				return;
 			}
 
+			const previousName = item.name;
 			item.name = validation.name;
 			state.dialog = { kind: 'none' };
+
+			if (previousName !== validation.name) {
+				showNotice(state, `Renamed ${previousName} to ${validation.name}.`);
+			}
 		},
 
 		itemDeleted(state, action: PayloadAction<WorkspaceItemId>) {
@@ -241,6 +269,10 @@ const workspaceSlice = createSlice({
 			const ancestorIds = getPath(state.items, itemId)
 				.slice(0, -1)
 				.map((ancestor) => ancestor.id);
+			const snapshot = current(state.items);
+			const restorable = removedIds
+				.map((removedId) => snapshot[removedId])
+				.filter((removed) => removed !== undefined);
 
 			for (const removedId of removedIds) {
 				delete state.items[removedId];
@@ -261,6 +293,36 @@ const workspaceSlice = createSlice({
 			}
 
 			state.dialog = { kind: 'none' };
+			showNotice(state, `${restorable[0]?.name ?? 'Item'} deleted.`, restorable);
+		},
+
+		deletionUndone(state) {
+			const restorable = state.notice ? current(state.notice).restorable : [];
+			const [restoredRoot] = restorable;
+
+			if (!restoredRoot || restoredRoot.parentId === null) {
+				return;
+			}
+
+			const validation = validateItemName({
+				items: state.items,
+				parentId: restoredRoot.parentId,
+				name: restoredRoot.name,
+			});
+
+			if (
+				state.items[restoredRoot.parentId]?.type !== 'folder' ||
+				validation.status === 'invalid'
+			) {
+				showNotice(state, `${restoredRoot.name} could not be restored.`);
+				return;
+			}
+
+			for (const restored of restorable) {
+				state.items[restored.id] = restored;
+			}
+
+			showNotice(state, `${restoredRoot.name} restored.`);
 		},
 	},
 });
@@ -278,9 +340,12 @@ export const {
 	searchCleared,
 	dialogOpened,
 	dialogClosed,
+	noticeDismissed,
+	createdItemAcknowledged,
 	itemCreated,
 	itemRenamed,
 	itemDeleted,
+	deletionUndone,
 } = workspaceSlice.actions;
 
 export default workspaceSlice;

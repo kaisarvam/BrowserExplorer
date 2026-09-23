@@ -14,8 +14,13 @@ const Panel = styled.main`
 	display: flex;
 	flex-direction: column;
 	gap: ${({ theme }) => theme.spacing.lg};
+	min-height: 0;
 	padding: ${({ theme }) => theme.spacing.lg};
 	overflow: auto;
+
+	&:focus-visible {
+		outline: none;
+	}
 `;
 
 const Toolbar = styled.div`
@@ -37,7 +42,7 @@ export function WorkspaceMainPanel() {
 	const openFileId = useStoreSelector(selectOpenFileId);
 
 	return (
-		<Panel>
+		<Panel tabIndex={-1}>
 			<SearchField />
 
 			{isSearching ? (
@@ -46,22 +51,24 @@ export function WorkspaceMainPanel() {
 				<>
 					<Toolbar>
 						<Breadcrumbs />
-						<CreateActions>
-							<Button
-								type='button'
-								onClick={() => dispatch(dialogOpened({ kind: 'create', itemType: 'folder' }))}
-							>
-								<NewFolderIcon aria-hidden='true' />
-								New folder
-							</Button>
-							<Button
-								type='button'
-								onClick={() => dispatch(dialogOpened({ kind: 'create', itemType: 'file' }))}
-							>
-								<NewFileIcon aria-hidden='true' />
-								New file
-							</Button>
-						</CreateActions>
+						{openFileId === null && (
+							<CreateActions>
+								<Button
+									type='button'
+									onClick={() => dispatch(dialogOpened({ kind: 'create', itemType: 'folder' }))}
+								>
+									<NewFolderIcon aria-hidden='true' />
+									New folder
+								</Button>
+								<Button
+									type='button'
+									onClick={() => dispatch(dialogOpened({ kind: 'create', itemType: 'file' }))}
+								>
+									<NewFileIcon aria-hidden='true' />
+									New file
+								</Button>
+							</CreateActions>
+						)}
 					</Toolbar>
 
 					{openFileId === null ? (
